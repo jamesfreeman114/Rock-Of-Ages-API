@@ -2,8 +2,9 @@ from django.http import HttpResponseServerError
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from rockapi.models import Rock, Type
 from django.contrib.auth.models import User
+from rockapi.models import Rock, Type
+
 
 
 class RockView(ViewSet):
@@ -31,6 +32,29 @@ class RockView(ViewSet):
         serialized = RockSerializer(rock, many=False)
 
         return Response(serialized.data, status=status.HTTP_201_CREATED)
+    
+    def destroy(self, request, pk=None):
+        """Handle DELETE requests for a single rock
+
+        Returns:
+            Response -- 200, 404, or 500 status code
+        """
+        try:
+            rock = Rock.objects.get(pk=pk)
+            
+            if rock.user.id == request.auth.user.id:
+                rock.delete()
+                return Response(None, status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({'message': 'You are not the owner of this rock.'}, status=status.HTTP_403_FORBIDDEN)
+
+        except Rock.DoesNotExist as ex:
+            return Response({'message': ex.args[0]}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as ex:
+            return Response({'message': ex.args[0]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
     def list(self, request):
         """Handle GET requests for all items
