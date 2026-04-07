@@ -62,8 +62,20 @@ class RockView(ViewSet):
         Returns:
             Response -- JSON serialized array
         """
+
+        #This gets our query string parameter
+        owner_only = self.request.query_params.get('owner', None)
+
+        
         try:
+            #This starts us out with all Rock objects
             rocks = Rock.objects.all()
+
+            # If `?owner=current` is in the URL
+            if owner_only is not None and owner_only == "current":
+                # Filter to only the current user's rocks
+                rocks = rocks.filter(user=request.auth.user)
+
             serializer = RockSerializer(rocks, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as ex:
